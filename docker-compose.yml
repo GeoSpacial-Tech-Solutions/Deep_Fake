@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/models:/app/models
+      - ./backend/app/.env.example:/app/app/.env
+    env_file:
+      - ./backend/app/.env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./frontend/build:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: deepfake
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: deepfake
+    volumes:
+      - ./infra/postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:6-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./infra/redis-data:/data
